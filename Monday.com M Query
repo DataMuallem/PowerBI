@@ -1,0 +1,25 @@
+let
+    Source = Web.Contents("https://api.monday.com/" & "v2",
+    [
+        Headers=[
+            #"Method"="POST",
+            #"Content-Type"="application/json",
+            #"Authorization"="Bearer Enter your API code"
+            ],
+            Content=Text.ToBinary("{""query"": ""{ boards (ids: Enter Id) { items {  id name column_values { title text  } } } }""}")
+            ]
+    ),
+    #"JSON" = Json.Document(Source,65001),
+    data = JSON[data],
+    boards = data[boards],
+    boards1 = boards{0},
+    items = boards1[items],
+    #"Converted to Table" = Table.FromList(items, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"name", "column_values"}, {"Column1.name", "Column1.column_values"}),
+    #"Expanded Column1.column_values" = Table.ExpandListColumn(#"Expanded Column1", "Column1.column_values"),
+    #"Expanded Column1.column_values1" = Table.ExpandRecordColumn(#"Expanded Column1.column_values", "Column1.column_values", {"title", "text"}, {"Column1.column_values.title", "Column1.column_values.text"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Column1.column_values1",{{"Column1.column_values.title", type text}}),
+    #"Pivoted Column" = Table.Pivot(#"Changed Type", List.Distinct(#"Changed Type"[Column1.column_values.title]), "Column1.column_values.title", "Column1.column_values.text"),
+    #"Renamed Columns" = Table.RenameColumns(#"Pivoted Column",{{"Column1.name", "Name"}})
+in
+    #"Renamed Columns"
