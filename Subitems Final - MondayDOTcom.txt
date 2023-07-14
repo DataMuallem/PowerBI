@@ -4,7 +4,7 @@ let
         Headers=[
             #"Method"="POST",
             #"Content-Type"="application/json",
-            #"Authorization"="eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjE3NzYwMTY3MywiYWFpIjoxMSwidWlkIjozMzY1NDEwMSwiaWFkIjoiMjAyMi0wOC0yNlQwNjoxODo1MC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTMyMjI5NzAsInJnbiI6InVzZTEifQ.V_plyzuZtwOChFTUGp0FAWULTmKt-3dRogo60md8s34"
+            #"Authorization"="API code here"
             ],
             Content=Text.ToBinary("{""query"": ""{ boards (ids: 3145939093) { items (ids:[3145939104,3145939109,3145940525,3145946486] ){ group { id title } name subitems { id name column_values { title text } } } } }""}")
             ]
