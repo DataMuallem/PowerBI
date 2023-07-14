@@ -1,0 +1,34 @@
+let
+    Source = Web.Contents("https://api.monday.com/" & "v2",
+    [
+        Headers=[
+            #"Method"="POST",
+            #"Content-Type"="application/json",
+            #"Authorization"="eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjE3NzYwMTY3MywiYWFpIjoxMSwidWlkIjozMzY1NDEwMSwiaWFkIjoiMjAyMi0wOC0yNlQwNjoxODo1MC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTMyMjI5NzAsInJnbiI6InVzZTEifQ.V_plyzuZtwOChFTUGp0FAWULTmKt-3dRogo60md8s34"
+            ],
+            Content=Text.ToBinary("{""query"": ""{ boards (ids: 3145939093) { items (ids:[3145939104,3145939109,3145940525,3145946486] ){ group { id title } name subitems { id name column_values { title text } } } } }""}")
+            ]
+    ),
+    #"JSON" = Json.Document(Source,65001),
+    data = JSON[data],
+    boards = data[boards],
+    boards1 = boards{0},
+    items = boards1[items],
+    #"Converted to Table1" = Table.FromList(items, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Expanded Column2" = Table.ExpandRecordColumn(#"Converted to Table1", "Column1", {"group", "name", "subitems"}, {"Column1.group", "Column1.name", "Column1.subitems"}),
+    #"Expanded Column1.group" = Table.ExpandRecordColumn(#"Expanded Column2", "Column1.group", {"id", "title"}, {"Column1.group.id", "Column1.group.title"}),
+    #"Expanded Column1.subitems2" = Table.ExpandListColumn(#"Expanded Column1.group", "Column1.subitems"),
+    #"Expanded Column1.subitems3" = Table.ExpandRecordColumn(#"Expanded Column1.subitems2", "Column1.subitems", {"id", "name", "column_values"}, {"Column1.subitems.id", "Column1.subitems.name", "Column1.subitems.column_values"}),
+    #"Expanded Column1.subitems.column_values2" = Table.ExpandListColumn(#"Expanded Column1.subitems3", "Column1.subitems.column_values"),
+    #"Expanded Column1.subitems.column_values3" = Table.ExpandRecordColumn(#"Expanded Column1.subitems.column_values2", "Column1.subitems.column_values", {"title", "text"}, {"Column1.subitems.column_values.title", "Column1.subitems.column_values.text"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Column1.subitems.column_values3",{{"Column1.subitems.column_values.text", type text}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column1.subitems.id", "Column1.group.id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Removed Columns",{{"Column1.group.title", "Groups"}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Renamed Columns1",{{"Column1.name", "Item Name"}, {"Column1.subitems.name", "Subitem Name"}, {"Column1.subitems.column_values.title", "Subitems"}, {"Column1.subitems.column_values.text", "Subitem Values"}}),
+    #"Replaced Value" = Table.ReplaceValue(#"Renamed Columns",null,"NA",Replacer.ReplaceValue,{"Subitem Name"}),
+    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value",null,"NA",Replacer.ReplaceValue,{"Subitems"}),
+    #"Replaced Value2" = Table.ReplaceValue(#"Replaced Value1",null,"NA",Replacer.ReplaceValue,{"Subitem Values"}),
+    #"Pivoted Column" = Table.Pivot(#"Replaced Value2", List.Distinct(#"Replaced Value2"[Subitems]), "Subitems", "Subitem Values"),
+    #"Removed Columns1" = Table.RemoveColumns(#"Pivoted Column",{"NA"})
+in
+    #"Removed Columns1"
